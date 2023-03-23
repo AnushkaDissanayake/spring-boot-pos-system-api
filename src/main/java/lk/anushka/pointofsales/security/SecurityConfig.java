@@ -39,10 +39,11 @@ public class SecurityConfig {
                 sessionCreationPolicy(SessionCreationPolicy.STATELESS).
                 and().
                 authorizeRequests()
-                .requestMatchers("/api/auth/**").permitAll().
+                .antMatchers("/api/auth/**").permitAll().
                 anyRequest().authenticated().
                 and().
                 httpBasic();
+        http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
     @Bean
