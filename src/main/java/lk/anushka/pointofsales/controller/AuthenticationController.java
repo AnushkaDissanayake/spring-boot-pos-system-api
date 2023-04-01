@@ -21,7 +21,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.*;
 import java.util.Collections;
+import java.util.Set;
 
 @RestController
 @RequestMapping("api/auth")
@@ -31,27 +33,45 @@ public class AuthenticationController {
     private RoleRepo roleRepo;
     private PasswordEncoder passwordEncoder;
     private JWTokenGenerator tokenGenerator;
+    private Validator validator;
     @Autowired
 
-    public AuthenticationController(AuthenticationManager authenticationManager, UserRepo userRepo, RoleRepo roleRepo, PasswordEncoder passwordEncoder, JWTokenGenerator tokenGenerator) {
+    public AuthenticationController(AuthenticationManager authenticationManager, UserRepo userRepo, RoleRepo roleRepo, PasswordEncoder passwordEncoder, JWTokenGenerator tokenGenerator, Validator validator) {
         this.authenticationManager = authenticationManager;
         this.userRepo = userRepo;
         this.roleRepo = roleRepo;
         this.passwordEncoder = passwordEncoder;
         this.tokenGenerator = tokenGenerator;
+        this.validator = validator;
     }
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody RegisterDTO registerDTO){
+        Set<ConstraintViolation<@Valid RegisterDTO>> violations = validator.validate(registerDTO);
+        if (violations.size() != 0) {
+            StringBuilder errorMessage = new StringBuilder();
+            for (ConstraintViolation<RegisterDTO> violation : violations) {
+                errorMessage.append("\n").append(violation.getMessage());
+            }
+            errorMessage.replace(0,1,"");
+            return new ResponseEntity<>(errorMessage.toString(),HttpStatus.BAD_REQUEST);
+        }
         if (userRepo.existsByUsername(registerDTO.getUsername())) {
-            return new ResponseEntity<>("Username already exist", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>("Username already exist.", HttpStatus.BAD_REQUEST);
         }
         UserEntity user = new UserEntity();
         user.setUsername(registerDTO.getUsername());
         user.setPassword(passwordEncoder.encode(registerDTO.getPassword()));
-        Role roles = roleRepo.findByName("USER").get();
+        user.setEmail(registerDTO.getEmail());
+        Role roles = roleRepo.findByName("ADMIN").get();
         user.setRoles(Collections.singletonList(roles));
-        userRepo.save(user);
+
+
+        try {
+            userRepo.save(user);
+        } catch (Exception m){
+            return new ResponseEntity<>("Something went wrong.. try again later.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
         return new ResponseEntity<>("Registration successfully", HttpStatus.OK);
     }
 
@@ -62,4 +82,5 @@ public class AuthenticationController {
         String token = tokenGenerator.generateToken(authentication);
         return new ResponseEntity<>(new AuthResponseDTO(token), HttpStatus.OK);
     }
+
 }
