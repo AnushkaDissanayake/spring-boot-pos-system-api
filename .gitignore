@@ -31,3 +31,5 @@ build/
 
 ### VS Code ###
 .vscode/
+
+src/main/resources/gmail-api-credential/client_secret_211961753454-msv6mu0sl7supr34h04m6r0klt4ct2nm.apps.googleusercontent.com.json

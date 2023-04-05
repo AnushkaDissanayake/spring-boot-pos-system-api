@@ -1,37 +1,24 @@
 package lk.anushka.pointofsales.util;
 
+import lk.anushka.pointofsales.email.GMailer;
 import lk.anushka.pointofsales.entity.UserEntity;
+import lombok.NoArgsConstructor;
 import net.bytebuddy.utility.RandomString;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Component;
 
-import javax.mail.MessagingException;
-import javax.mail.internet.MimeMessage;
-import java.io.UnsupportedEncodingException;
-
+@Component
+@NoArgsConstructor
 public class EmailUtil {
-    private JavaMailSender mailSender;
-    public EmailUtil(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-    }
 
-    public void sendVerificationEmail(UserEntity user, String serverURL) throws MessagingException, UnsupportedEncodingException {
+    public void sendVerificationEmail(UserEntity user, String serverURL) throws Exception {
         String toAddress = user.getEmail();
-        String fromAddress = "pos.anushka@gmail.com";
-        String senderName = "Anushka Dissanayake";
         String subject = "Please verify your registration";
-        String content = "Dear [[name]],<br>"
-                + "Please click the link below to verify your registration:<br>"
-                + "<h3><a href=\"[[URL]]\" target=\"_self\">VERIFY</a></h3>"
-                + "Thank you,<br>"
+        String content = "Dear [[name]],\n"
+                + "Please click the link below to verify your registration:\n"
+                + "[[URL]]\n\n\n"
+                + "Thank you,\n"
                 + "Anushka Dissanayake.";
 
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message);
-
-        helper.setFrom(fromAddress, senderName);
-        helper.setTo(toAddress);
-        helper.setSubject(subject);
         String randomCode = RandomString.make(64);
         user.setVerificationCode(randomCode);
 
@@ -40,8 +27,6 @@ public class EmailUtil {
 
         content = content.replace("[[URL]]", verifyURL);
 
-        helper.setText(content, true);
-
-        mailSender.send(message);
+        new GMailer().sendMail(subject,content,toAddress);
     }
 }

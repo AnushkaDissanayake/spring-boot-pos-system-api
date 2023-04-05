@@ -36,10 +36,8 @@ public class MainController {
 
     @PostMapping("/changePassword")
     public ResponseEntity<String> changePassword(@RequestBody ChangePasswordDTO changePasswordDTO) {
-        String oldPassword = passwordEncoder.encode(changePasswordDTO.getOldPassword());
-        Authentication authenticate;
         try {
-            authenticate = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(changePasswordDTO.getUsername(),changePasswordDTO.getOldPassword()));
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(changePasswordDTO.getUsername(),changePasswordDTO.getOldPassword()));
         } catch (Exception e) {
             return new ResponseEntity<>("Invalid credentials",HttpStatus.BAD_REQUEST);
         }
