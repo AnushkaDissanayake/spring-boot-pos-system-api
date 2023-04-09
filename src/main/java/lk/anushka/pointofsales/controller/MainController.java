@@ -3,22 +3,13 @@ package lk.anushka.pointofsales.controller;
 import lk.anushka.pointofsales.dto.ChangePasswordDTO;
 import lk.anushka.pointofsales.entity.UserEntity;
 import lk.anushka.pointofsales.repo.UserRepo;
-import lk.anushka.pointofsales.service.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Optional;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("api/pos")
@@ -45,5 +36,9 @@ public class MainController {
         user.setPassword(passwordEncoder.encode(changePasswordDTO.getNewPassword()));
         userRepo.save(user);
         return new ResponseEntity<>("Password change success full",HttpStatus.OK);
+    }
+    @GetMapping("/test")
+    public ResponseEntity<String > test(){
+        return new ResponseEntity<>("test done", HttpStatus.OK);
     }
 }

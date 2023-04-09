@@ -38,5 +38,10 @@ public class JWTokenGenerator {
             throw new AuthenticationCredentialsNotFoundException("JWT expired or incorrect");
         }
     }
+    public Date getExpirationFromJWT(String token) {
+        Claims claims = Jwts.parser().setSigningKey(SecurityConstant.JWT_SECRET).parseClaimsJws(token).getBody();
+        return claims.getExpiration();
+    }
+
 
 }

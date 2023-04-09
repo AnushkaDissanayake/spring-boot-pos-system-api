@@ -1,7 +1,11 @@
 package lk.anushka.pointofsales.security;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import lk.anushka.pointofsales.entity.TokenEntity;
+import lk.anushka.pointofsales.repo.TokenRepo;
 import lk.anushka.pointofsales.service.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,12 +18,16 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Date;
+
 
 public class JWTAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private JWTokenGenerator tokenGenerator;
     @Autowired
     private CustomUserDetailsService customUserDetailsService;
+    @Autowired
+    private TokenRepo tokenRepo;
 
     private String getJWTFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
@@ -32,6 +40,34 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String token = getJWTFromRequest(request);
+        var tokenEntity = tokenRepo.findByToken(token).orElse(null);
+        if (tokenEntity != null) {
+            if (tokenEntity.isExpired() && tokenEntity.isRevoked()) {
+                throw new AuthenticationCredentialsNotFoundException("token expired");
+            }
+            else if (tokenEntity.isExpired()) {
+                tokenEntity.setRevoked(true);
+                tokenRepo.save(tokenEntity);
+                throw new AuthenticationCredentialsNotFoundException("token expired");
+            }
+            else if (tokenEntity.isRevoked()) {
+                tokenEntity.setExpired(true);
+                tokenRepo.save(tokenEntity);
+                throw new AuthenticationCredentialsNotFoundException("token revoked");
+            }
+            try {
+                Date expirationDate = tokenGenerator.getExpirationFromJWT(token);
+            } catch (ExpiredJwtException e) {
+                tokenEntity.setRevoked(true);
+                tokenEntity.setExpired(true);
+                tokenRepo.save(tokenEntity);
+                throw new AuthenticationCredentialsNotFoundException(e.getMessage());
+            }
+        }
+        if (token != null) {
+            Date expirationDate = tokenGenerator.getExpirationFromJWT(token);
+            System.out.println(expirationDate);
+        }
         if(StringUtils.hasText(token) && tokenGenerator.validateToken(token)) {
             String username = tokenGenerator.getUsernameFromJWT(token);
 
